@@ -102,13 +102,9 @@ The following issues can be observed:
 
 ## 4. Evidence
 
-### Screenshot 1 – API Request and Response
+### Burp Suite Request and Response
 
-![Burp Suite Evidence](../evidence.jpg.jpeg)
-
-### Screenshot 2 – Additional Evidence
-
-![Additional Burp Suite Evidence](../rep.jpeg)
+![Burp Suite Evidence](evidence.jpg)
 
 ---
 
@@ -179,3 +175,11 @@ Although the vulnerability does not directly allow unauthorized access or data m
 ## 10. Disclosure
 
 This report documents a security finding identified during authorized security testing and submitted through the BugBounty.sa platform.
+
+---
+
+## 11. Original Finding
+
+The following screenshot shows the original finding where the vulnerability was identified.
+
+![Original Finding](rep.jpeg)
