@@ -2,52 +2,67 @@
 Bug bounty findings, vulnerability research, and responsible disclosure reports.
 
 
-Summary
+# Verbose Error Messages and Improper Error Handling in Promo Code API
 
-The Promo Code API endpoint exposes sensitive internal implementation details when processing invalid user input.
+**Platform:** BugBounty.sa  
+**Vulnerability Type:** Information Disclosure  
+**Severity:** Informational  
+**Authentication Required:** No  
+**Reproducibility:** 100%
 
-Instead of returning a generic validation error, the application reveals backend technology information, internal service names, class names, and validation rules within the response body.
+---
 
-Additionally, the endpoint returns an HTTP 500 Internal Server Error for expected input validation failures, indicating improper exception handling.
+## 1. Summary
+
+The Promo Code API endpoint discloses sensitive internal implementation details when processing invalid user input.
+
+Instead of returning a generic validation error, the application exposes backend technology information, internal service names, class names, and validation rules within the response body.
+
+Additionally, the endpoint returns an `HTTP 500 Internal Server Error` for expected input validation failures, indicating improper exception handling and allowing attackers to gain insight into backend behavior.
 
 This information disclosure may assist attackers during reconnaissance activities and facilitate more targeted attacks against the application infrastructure.
 
-Vulnerability Details
+---
 
-Endpoint: /api/PromoCode
+## 2. Vulnerability Details
 
-Parameter: promoCode
+| Field | Details |
+|---|---|
+| **Endpoint** | `/api/PromoCode` |
+| **Parameter** | `promoCode` |
+| **Vulnerability** | Verbose Error Messages / Information Disclosure |
+| **Severity** | Informational |
+| **Authentication** | Not Required |
 
-The endpoint performs server-side validation on the supplied promo code value.
+The endpoint performs server-side validation on the supplied promo code value. When an invalid value exceeding the allowed length is submitted, the backend returns a verbose exception message containing internal implementation details.
 
-When an invalid value exceeding the allowed length is submitted, the backend returns a verbose exception message containing internal implementation details.
+### Information Disclosed
 
 The response reveals:
 
-Backend platform information.
+- Backend platform information.
+- Internal service names.
+- Internal class and request object names.
+- Promo code length restrictions.
+- Validation component details.
 
-Internal service names.
+Furthermore, the application returns `HTTP 500 Internal Server Error` instead of an appropriate client-side validation response, such as `HTTP 400 Bad Request` or `HTTP 422 Unprocessable Entity`.
 
-Internal class names.
+---
 
-Promo code length restrictions.
+## 3. Proof of Concept (PoC)
 
-Validation implementation details.
+### Step 1 – Intercept the Request
 
-Furthermore, the application returns HTTP 500 Internal Server Error instead of an appropriate client-side validation response, such as HTTP 400 Bad Request.
+Intercept a request to the Promo Code API using **Burp Suite Repeater**.
 
-Proof of Concept (PoC)
+### Step 2 – Send the Modified Request
 
-Step 1 – Intercept the Request
+Submit a promo code exceeding the allowed maximum length:
 
-Intercept a request to the Promo Code API using Burp Suite and send it to Repeater.
-
-Step 2 – Submit Invalid Input
-
-Send the following request with a promo code exceeding the allowed length:
-
+```http
 POST /api/PromoCode HTTP/1.1
-Host: [REDACTED]
+Host: XXXXXXX
 Content-Type: application/json
 
 {
@@ -56,11 +71,13 @@ Content-Type: application/json
     "promoCode": "22222222+"
   }
 }
+```
 
-Step 3 – Observe the Response
+### Step 3 – Observe the Response
 
-The application returns an HTTP 500 response containing internal implementation details:
+The server responds with an HTTP 500 error and exposes internal implementation details:
 
+```http
 HTTP/1.1 500 Internal Server Error
 
 {
@@ -73,92 +90,88 @@ HTTP/1.1 500 Internal Server Error
     }
   ]
 }
+```
 
-Step 4 – Analyze the Response
+### Step 4 – Analyze the Response
 
-The response reveals several internal details:
+The following issues can be observed:
 
-HTTP 500 is returned instead of an appropriate validation status code.
+1. The API returns `HTTP 500` instead of an appropriate validation status code.
+2. Internal service and class names are exposed.
+3. Backend implementation details are disclosed.
+4. Validation constraints, including the maximum promo code length, are revealed.
 
-Internal service and class names are exposed.
+### Evidence
 
-Backend implementation details are disclosed.
+Add the sanitized screenshot demonstrating the response:
 
-Input validation constraints are revealed.
+![Burp Suite Evidence](evidence.png)
+---
 
-Requirements
+## 4. Requirements
 
-No authentication required.
+- No authentication required.
+- No special privileges required.
+- Reproducible 100% of the time.
 
-No special privileges required.
+---
 
-Reproducible with invalid input.
+## 5. Impact
 
-Impact
-
-1. Technology Stack Disclosure
+### 5.1 Technology Stack Disclosure
 
 The response exposes information about the underlying backend platform and framework components.
 
-An attacker may use this information to identify publicly known vulnerabilities, security advisories, or platform-specific attack vectors.
+An attacker may leverage this information to identify publicly known vulnerabilities, security advisories, or platform-specific attack vectors.
 
-2. Internal Architecture Disclosure
+### 5.2 Internal Architecture Disclosure
 
 The application reveals internal implementation details, including:
 
-Service interfaces.
+- Service interfaces.
+- Request object names.
+- Validation components.
 
-Request object names.
+This information assists attackers in mapping the application's internal structure and understanding backend workflows.
 
-Validation components.
-
-This information may assist attackers in mapping the application's internal structure and understanding backend workflows.
-
-3. Business Logic Disclosure
+### 5.3 Business Logic Disclosure
 
 The error message reveals validation rules associated with promo code processing, including maximum accepted length restrictions.
 
-This information may help attackers understand application behavior and optimize further testing activities.
+Knowledge of these constraints may help attackers optimize fuzzing strategies or enumeration activities.
 
-4. Unauthenticated Information Disclosure
+### 5.4 Unauthenticated Information Disclosure
 
-The issue can be triggered without authentication or special privileges, increasing the application's exposure surface and making automated reconnaissance easier.
+The issue can be triggered by any anonymous user without authentication, increasing the exposure surface and making automated reconnaissance easier.
 
-Risk Rating
+---
 
-Severity: Informational
+## 6. Risk Rating
+
+**Severity: Informational**
 
 Although the vulnerability does not directly allow unauthorized access or data modification, it exposes internal application details that may facilitate further attacks and reduce uncertainty during reconnaissance.
 
-Remediation
+---
 
-The following security improvements are recommended:
+## 7. Remediation
 
-Replace verbose exception messages with generic user-facing error responses.
+1. Replace verbose exception messages with generic user-facing error responses.
+2. Avoid exposing internal class names, namespaces, method names, framework identifiers, or validation attributes in API responses.
+3. Return appropriate HTTP status codes for validation failures:
+   - `HTTP 400 Bad Request`
+   - `HTTP 422 Unprocessable Entity`
+4. Implement centralized exception handling to ensure unexpected errors are logged internally while returning sanitized responses to clients.
+5. Review all API endpoints for similar verbose error disclosures and standardize secure error handling practices.
 
-Avoid exposing internal class names, namespaces, method names, framework identifiers, or validation attributes in API responses.
+---
 
-Return appropriate HTTP status codes for validation failures, such as:
+## 8. Tools Used
 
-HTTP 400 Bad Request.
+- Burp Suite Repeater
 
-HTTP 422 Unprocessable Entity.
+---
 
-Implement centralized exception handling to ensure unexpected errors are logged internally while returning sanitized responses to clients.
+## 9. Disclosure
 
-Review all API endpoints for similar verbose error disclosures and standardize secure error handling practices.
-
-Tools Used
-
-Burp Suite Repeater
-
-Manual API Testing
-
-HTTP Request and Response Analysis
-
-Disclosure
-
-The vulnerability was identified and responsibly reported to the affected organization.
-
-Sensitive information, internal implementation details, and identifying information have been redacted from this public report.
-
+This report documents a security finding identified during authorized security testing and submitted through the BugBounty.sa platform.
