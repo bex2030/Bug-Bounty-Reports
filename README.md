@@ -1,7 +1,6 @@
 # Bug-Bounty-Reports
 Bug bounty findings, vulnerability research, and responsible disclosure reports.
 
-
 # Verbose Error Messages and Improper Error Handling in Promo Code API
 
 **Platform:** BugBounty.sa  
@@ -28,17 +27,15 @@ This information disclosure may assist attackers during reconnaissance activitie
 
 | Field | Details |
 |---|---|
-| **Endpoint** | `/api/PromoCode` |
-| **Parameter** | `promoCode` |
-| **Vulnerability** | Verbose Error Messages / Information Disclosure |
-| **Severity** | Informational |
-| **Authentication** | Not Required |
+| Endpoint | `/api/PromoCode` |
+| Parameter | `promoCode` |
+| Vulnerability | Verbose Error Messages / Information Disclosure |
+| Severity | Informational |
+| Authentication | Not Required |
 
 The endpoint performs server-side validation on the supplied promo code value. When an invalid value exceeding the allowed length is submitted, the backend returns a verbose exception message containing internal implementation details.
 
 ### Information Disclosed
-
-The response reveals:
 
 - Backend platform information.
 - Internal service names.
@@ -101,14 +98,21 @@ The following issues can be observed:
 3. Backend implementation details are disclosed.
 4. Validation constraints, including the maximum promo code length, are revealed.
 
-### Evidence
-
-Add the sanitized screenshot demonstrating the response:
-
-![Burp Suite Evidence](evidence.png)
 ---
 
-## 4. Requirements
+## 4. Evidence
+
+### Screenshot 1 – API Request and Response
+
+![Burp Suite Evidence](../evidence.jpg.jpeg)
+
+### Screenshot 2 – Additional Evidence
+
+![Additional Burp Suite Evidence](../rep.jpeg)
+
+---
+
+## 5. Requirements
 
 - No authentication required.
 - No special privileges required.
@@ -116,15 +120,15 @@ Add the sanitized screenshot demonstrating the response:
 
 ---
 
-## 5. Impact
+## 6. Impact
 
-### 5.1 Technology Stack Disclosure
+### 6.1 Technology Stack Disclosure
 
 The response exposes information about the underlying backend platform and framework components.
 
 An attacker may leverage this information to identify publicly known vulnerabilities, security advisories, or platform-specific attack vectors.
 
-### 5.2 Internal Architecture Disclosure
+### 6.2 Internal Architecture Disclosure
 
 The application reveals internal implementation details, including:
 
@@ -134,19 +138,19 @@ The application reveals internal implementation details, including:
 
 This information assists attackers in mapping the application's internal structure and understanding backend workflows.
 
-### 5.3 Business Logic Disclosure
+### 6.3 Business Logic Disclosure
 
 The error message reveals validation rules associated with promo code processing, including maximum accepted length restrictions.
 
 Knowledge of these constraints may help attackers optimize fuzzing strategies or enumeration activities.
 
-### 5.4 Unauthenticated Information Disclosure
+### 6.4 Unauthenticated Information Disclosure
 
 The issue can be triggered by any anonymous user without authentication, increasing the exposure surface and making automated reconnaissance easier.
 
 ---
 
-## 6. Risk Rating
+## 7. Risk Rating
 
 **Severity: Informational**
 
@@ -154,7 +158,7 @@ Although the vulnerability does not directly allow unauthorized access or data m
 
 ---
 
-## 7. Remediation
+## 8. Remediation
 
 1. Replace verbose exception messages with generic user-facing error responses.
 2. Avoid exposing internal class names, namespaces, method names, framework identifiers, or validation attributes in API responses.
@@ -166,12 +170,12 @@ Although the vulnerability does not directly allow unauthorized access or data m
 
 ---
 
-## 8. Tools Used
+## 9. Tools Used
 
 - Burp Suite Repeater
 
 ---
 
-## 9. Disclosure
+## 10. Disclosure
 
 This report documents a security finding identified during authorized security testing and submitted through the BugBounty.sa platform.
